@@ -4,8 +4,7 @@ sslserver adds SSL support for classes in socketserver
   
 ## Installation  
   
-Clone the repository and run  
-```pip install .```  
+```pip install git+https://github.com/Y4hL/sslserver```  
   
 ## sslserver Objects  
   
