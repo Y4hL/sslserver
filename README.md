@@ -102,7 +102,7 @@ if __name__ == "__main__":
 ### ThreadPoolMixIn with custom amount of threads  
   
 TheadPoolMixIn by default lets concurrent.futures.ThreadPoolExecutor choose the amount of threads it uses.  
-However if one wants to overwrite this value, it can be done before calling serve_forver()  
+However if one wants to overwrite this value, it can be done before calling serve_forever()  
   
 ```python
 from concurrent.futures import ThreadPoolExecutor
