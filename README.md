@@ -12,7 +12,9 @@ sslserver adds SSL support for classes in socketserver
   
 sslserver.TCPServer attempts to be a dropin replacement for the socketserver.TCPServer class. The only change is a added parameter context.  
   
-class TCPServer(server_address, RequestHandlerClass, bind_and_activate=True, context=None)  
+```python
+class TCPServer(server_address, RequestHandlerClass, bind_and_activate=True, context=None)
+```  
   
 Passing context a valid SSLContext object will enable SSL on the server.  
 If context is not passed, a warning will be logged, but the server will run without SSL.  
@@ -25,9 +27,15 @@ sslservers.ThreadingTCPServer is a copy of socketserver.ThreadingTCPServer but i
   
 sslserver.ForkingTCPServer is a copy of socketserver.ForkingTCPServer but inherited from sslservers.TCPServer.  
   
+### sslserver.ThreadPoolMixIn  
+  
+ThreadPoolMixIn uses concurrent.futures.ThreadPoolExecutor to process requests.  
+While socketserver.ThreadingMixIn creates a thread for each connection, ThreadPoolMixIn reuses a set amount of threads.  
+As with socketserver.ThreadingMixIn, ThreadPoolMixIn can be used with both socketserver.TCPServer and sslserver.TCPServer  
+  
 ## Examples  
   
-TCPServer example from the [python documentation](https://docs.python.org/3/library/socketserver.html#socketserver-tcpserver-example) using sslserver  
+### TCPServer example from the [python documentation](https://docs.python.org/3/library/socketserver.html#socketserver-tcpserver-example) using sslserver  
   
 ```python
 import ssl
@@ -61,6 +69,52 @@ if __name__ == "__main__":
     with sslserver.TCPServer(address, MyTCPHandler, context=context) as server:
         # Activate the server; this will keep running until you
         # interrupt the program with Ctrl-C
+        server.serve_forever()
+```  
+  
+### ThreadPoolMixIn example  
+  
+```python
+import sslserver
+import socketserver
+
+# Use sslserver.ThreadPoolMixIn to create new server class
+# socketserver.TCPServer can be changed to sslserver.TCPServer for ssl support
+class ThreadPoolTCPServer(sslserver.ThreadPoolMixIn, socketserver.TCPServer):
+    """ socketserver.TCPServer using a ThreadPool """
+
+class MyTCPHandler(socketserver.BaseRequestHandler):
+    """ Handler class for incoming connections """
+
+    def handle(self):
+        self.data = self.request.recv(1024)
+        print(f"{self.client_address[0]} wrote: {self.data}")
+        # Send data back in uppercase
+        self.request.sendall(self.data.upper())
+
+if __name__ == "__main__":
+    address = ("localhost", 9999)
+
+    with ThreadPoolTCPServer(address, MyHandler) as server:
+        server.serve_forever()
+```  
+  
+### ThreadPoolMixIn with custom amount of threads  
+  
+TheadPoolMixIn by default lets concurrent.futures.ThreadPoolExecutor choose the amount of threads it uses.  
+However if one wants to overwrite this value, it can be done before calling serve_forver()  
+  
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+if __name__ == "__main__":
+    address = ("localhost", 9999)
+
+    thread_count = 32
+
+    with ThreadPoolTCPServer(address, MyHandler) as server:
+        # Overwrite executor
+        server.executor = ThreadPoolExecutor(max_workers=thread_count)
         server.serve_forever()
 ```  
   

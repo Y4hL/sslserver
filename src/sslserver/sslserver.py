@@ -10,25 +10,21 @@ socketserver.ForkingTCPServer
 import os
 import ssl
 import logging
+import socketserver
 from typing import Type
-
-from socketserver import ThreadingMixIn
-from socketserver import TCPServer as _TCPServer
-from socketserver import BaseRequestHandler
+from concurrent import futures
 
 
-if hasattr(os, "fork"):
-    from socketserver import ForkingMixIn
-
-
-class TCPServer(_TCPServer):
+class TCPServer(socketserver.TCPServer):
     """ SSL implementation of socketserver.TCPServer """
 
     def __init__(self, server_address: tuple[str, int],
-                 RequestHandlerClass: Type[BaseRequestHandler],
+                 RequestHandlerClass: Type[socketserver.BaseRequestHandler],
                  bind_and_activate: bool = True, context: ssl.SSLContext | None = None):
         """ Wrap socket in SSL """
-        _TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=False)
+        socketserver.TCPServer.__init__(
+            self, server_address, RequestHandlerClass, bind_and_activate=False
+        )
 
         # Overwrite socket with it's ssl counterpart
         if context:
@@ -45,10 +41,30 @@ class TCPServer(_TCPServer):
                 raise
 
 
-class ThreadingTCPServer(ThreadingMixIn, TCPServer):
+class ThreadingTCPServer(socketserver.ThreadingMixIn, TCPServer):
     """ ThreadingMixIn added to SSL TCPServer """
 
 
 if hasattr(os, "fork"):
-    class ForkingTCPServer(ForkingMixIn, TCPServer):
+    class ForkingTCPServer(socketserver.ForkingMixIn, TCPServer):
         """ ForkingMixIn added to SSL TCPServer """
+
+
+# ThreadPool implementation (not from socketserver)
+
+class ThreadPoolMixIn(socketserver.ThreadingMixIn):
+    """ Use a ThreadPool instead of one thread per connection """
+
+    executor: futures.ThreadPoolExecutor = futures.ThreadPoolExecutor()
+    future_threads: list[futures.Future] = []
+
+    def process_request(self, request, client_address) -> None:
+        """ Add request to process pool """
+        self.future_threads.append(
+            self.executor.submit(self.process_request_thread, request, client_address)
+        )
+
+    def server_close(self):
+        """ Shutdown executor """
+        super().server_close()
+        self.executor.shutdown()
