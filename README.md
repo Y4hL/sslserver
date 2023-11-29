@@ -62,7 +62,7 @@ if __name__ == "__main__":
     address = ("localhost", 9999)
 
     # Create default SSLContext
-    ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain("server.cert", "server.key")
 
     # Create the server, binding to localhost on port 9999
