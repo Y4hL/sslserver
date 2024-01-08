@@ -20,17 +20,17 @@ class TCPServer(socketserver.TCPServer):
 
     def __init__(self, server_address: tuple[str, int],
                  RequestHandlerClass: Type[socketserver.BaseRequestHandler],
-                 bind_and_activate: bool = True, context: ssl.SSLContext | None = None):
+                 bind_and_activate: bool = True, context: ssl.SSLContext = None):
         """ Wrap socket in SSL """
         socketserver.TCPServer.__init__(
             self, server_address, RequestHandlerClass, bind_and_activate=False
         )
 
         # Overwrite socket with it's ssl counterpart
-        if context:
+        if context is not None:
             self.socket = context.wrap_socket(self.socket, server_side=True)
         else:
-            logging.warning("No context provided, TCPServer will run without SSL.")
+            logging.warning(f"No context provided, TCPServer at address {server_address} will run without SSL.")
 
         if bind_and_activate:
             try:
