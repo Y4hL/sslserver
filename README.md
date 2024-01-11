@@ -80,7 +80,7 @@ import socketserver
 
 # Use sslserver.ThreadPoolMixIn to create new server class
 # socketserver.TCPServer can be changed to sslserver.TCPServer for ssl support
-class ThreadPoolTCPServer(sslserver.ThreadPoolMixIn, socketserver.TCPServer):
+class ThreadPoolTCPServer(sslserver.ThreadPoolMixIn, sslserver.TCPServer):
     """ socketserver.TCPServer using a ThreadPool """
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
